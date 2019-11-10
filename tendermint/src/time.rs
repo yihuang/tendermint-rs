@@ -36,6 +36,11 @@ impl Time {
         Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
 
+    /// Returns an RFC 3339 string, such as 1996-12-19T16:39:57-08:00.
+    pub fn to_rfc3339(&self) -> String {
+        self.0.to_rfc3339()
+    }
+
     /// Convert this timestamp to a `SystemTime`
     pub fn to_system_time(&self) -> Result<SystemTime, Error> {
         let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
