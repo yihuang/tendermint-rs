@@ -3,6 +3,8 @@
 use crate::error::{Error, ErrorKind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tai64::TAI64N;
 
@@ -45,6 +47,20 @@ impl Time {
     pub fn to_system_time(&self) -> Result<SystemTime, Error> {
         let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
         Ok(UNIX_EPOCH + duration_since_epoch)
+    }
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.to_rfc3339())
+    }
+}
+
+impl FromStr for Time {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Time::parse_from_rfc3339(s)
     }
 }
 
