@@ -31,7 +31,7 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// Sync information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct SyncInfo {
     /// Latest block hash
     pub latest_block_hash: Hash,
