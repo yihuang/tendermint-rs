@@ -50,6 +50,12 @@ impl Time {
     }
 }
 
+impl Default for Time {
+    fn default() -> Time {
+        Time::unix_epoch()
+    }
+}
+
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_rfc3339())

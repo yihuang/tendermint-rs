@@ -67,7 +67,7 @@ impl lite::ValidatorSet for Set {
 }
 
 /// Validator information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
