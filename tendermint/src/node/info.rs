@@ -33,7 +33,7 @@ pub struct Info {
 }
 
 /// Protocol version information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct ProtocolVersionInfo {
     /// P2P protocol version
     #[serde(
@@ -58,10 +58,15 @@ pub struct ProtocolVersionInfo {
 }
 
 /// Listen address information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct ListenAddress(String);
 
 impl ListenAddress {
+    /// Construct `ListenAddress`
+    pub fn new(s: String) -> ListenAddress {
+        ListenAddress(s)
+    }
+
     /// Convert `ListenAddress` to a `net::Address`
     pub fn to_net_address(&self) -> Option<net::Address> {
         // TODO(tarcieri): validate these and handle them better at parse time
@@ -99,6 +104,12 @@ pub enum TxIndexStatus {
     /// Index is off
     #[serde(rename = "off")]
     Off,
+}
+
+impl Default for TxIndexStatus {
+    fn default() -> TxIndexStatus {
+        TxIndexStatus::On
+    }
 }
 
 impl From<TxIndexStatus> for bool {
