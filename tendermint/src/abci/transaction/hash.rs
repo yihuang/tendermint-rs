@@ -34,6 +34,7 @@ impl Default for Hash {
         // hash of empty data
         let mut bytes = [0u8; LENGTH];
         bytes.copy_from_slice(&Sha256::digest(&[])[..LENGTH]);
+        Hash::new(bytes)
     }
 }
 
