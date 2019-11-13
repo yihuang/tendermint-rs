@@ -1,8 +1,13 @@
 //! Tendermint validators
 
-use crate::{account, merkle, vote, PublicKey};
-use prost::Message;
+use crate::amino_types::message::AminoMessage;
+use crate::validator::signatory::{Signature, Verifier};
+use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use signatory;
+use signatory::ed25519;
+use signatory_dalek;
+use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
@@ -21,18 +26,39 @@ impl Set {
 
     /// Compute the Merkle root of the validator set
     pub fn hash(self) -> merkle::Hash {
-        // We need to get from Vec<Info> to &[&[u8]] so we can call simple_hash_from_byte_slices.
-        // This looks like: Vec<Info> -> Vec<Vec<u8>> -> Vec<&[u8]> -> &[&[u8]]
-        // Can we simplify this?
-        // Perhaps simple_hash_from_byteslices should take Vec<Vec<u8>> directly ?
         let validator_bytes: Vec<Vec<u8>> = self
             .validators
             .into_iter()
-            .map(|x| x.hash_bytes())
+            .map(|validator| validator.hash_bytes())
             .collect();
-        let validator_byteslices: Vec<&[u8]> =
-            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
-        merkle::simple_hash_from_byte_slices(validator_byteslices.as_slice())
+        merkle::simple_hash_from_byte_slices(validator_bytes)
+    }
+}
+
+impl lite::ValidatorSet for Set {
+    type Validator = Info;
+
+    fn hash(&self) -> Hash {
+        // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
+        // deduplicate
+        let validator_bytes: &Vec<Vec<u8>> = &self
+            .validators
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
+        Hash::Sha256(merkle::simple_hash_from_byte_slices(
+            validator_bytes.to_vec(),
+        ))
+    }
+
+    fn total_power(&self) -> u64 {
+        self.validators.iter().fold(0u64, |total, val_info| {
+            total + val_info.voting_power.value()
+        })
+    }
+
+    fn into_vec(&self) -> Vec<Self::Validator> {
+        self.validators.to_vec()
     }
 }
 
@@ -51,6 +77,22 @@ pub struct Info {
 
     /// Validator proposer priority
     pub proposer_priority: Option<ProposerPriority>,
+}
+
+impl lite::Validator for Info {
+    fn power(&self) -> u64 {
+        self.voting_power.value()
+    }
+
+    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
+        if let Some(pk) = &self.pub_key.ed25519() {
+            let verifier = Ed25519Verifier::from(pk);
+            if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
+                return verifier.verify(sign_bytes, &sig).is_ok();
+            }
+        }
+        false
+    }
 }
 
 impl From<PublicKey> for account::Id {
@@ -102,9 +144,7 @@ impl From<&Info> for InfoHashable {
 // pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-        InfoHashable::from(self).encode(&mut bytes).unwrap();
-        bytes
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 
