@@ -20,6 +20,7 @@
           ]
         }
       },
+      "validators": [],
       "app_hash": "",
       "app_state": {
         "accounts": [
