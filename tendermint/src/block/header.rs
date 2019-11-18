@@ -1,6 +1,7 @@
 //! Block headers
-
-use crate::{account, block, chain, Hash, Time};
+use crate::merkle::simple_hash_from_byte_slices;
+use crate::{account, amino_types, block, chain, lite, Hash, Time};
+use amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -70,6 +71,53 @@ pub struct Header {
     pub proposer_address: account::Id,
 }
 
+impl lite::Header for Header {
+    fn height(&self) -> block::Height {
+        self.height
+    }
+
+    fn bft_time(&self) -> Time {
+        self.time
+    }
+
+    fn validators_hash(&self) -> Hash {
+        self.validators_hash
+    }
+
+    fn next_validators_hash(&self) -> Hash {
+        self.next_validators_hash
+    }
+
+    fn hash(&self) -> Hash {
+        // Note that if there is an encoding problem this will
+        // panic (as the golang code would):
+        // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
+        // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
+
+        let mut byteslices: Vec<Vec<u8>> = Vec::with_capacity(16);
+        byteslices.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
+            &self.version,
+        )));
+        byteslices.push(bytes_enc(self.chain_id.as_bytes()));
+        byteslices.push(encode_varint(self.height.value()));
+        byteslices.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
+        byteslices.push(encode_varint(self.num_txs));
+        byteslices.push(encode_varint(self.total_txs));
+        byteslices.push(AminoMessage::bytes_vec(&BlockId::from(&self.last_block_id)));
+        byteslices.push(encode_hash(self.last_commit_hash));
+        byteslices.push(encode_hash(self.data_hash));
+        byteslices.push(encode_hash(self.validators_hash));
+        byteslices.push(encode_hash(self.next_validators_hash));
+        byteslices.push(encode_hash(self.consensus_hash));
+        byteslices.push(encode_hash(self.app_hash));
+        byteslices.push(encode_hash(self.last_results_hash));
+        byteslices.push(encode_hash(self.evidence_hash));
+        byteslices.push(bytes_enc(self.proposer_address.as_bytes()));
+
+        Hash::Sha256(simple_hash_from_byte_slices(byteslices))
+    }
+}
+
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
@@ -89,4 +137,25 @@ pub struct Version {
         deserialize_with = "serializers::parse_u64"
     )]
     pub app: u64,
+}
+
+fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
+    let mut chain_id_enc = vec![];
+    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc).unwrap();
+    chain_id_enc.append(&mut bytes.to_vec());
+    chain_id_enc
+}
+
+fn encode_hash(hash: Hash) -> Vec<u8> {
+    let mut hash_enc = vec![];
+    if let Some(last_commit_hash_bytes) = hash.as_bytes() {
+        hash_enc = bytes_enc(last_commit_hash_bytes);
+    }
+    hash_enc
+}
+
+fn encode_varint(val: u64) -> Vec<u8> {
+    let mut val_enc = vec![];
+    prost_amino::encoding::encode_varint(val, &mut val_enc);
+    val_enc
 }

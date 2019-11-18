@@ -5,6 +5,7 @@
 
 pub mod block_id;
 pub mod ed25519;
+pub mod message;
 pub mod ping;
 pub mod proposal;
 pub mod remote_error;
@@ -12,6 +13,7 @@ pub mod secret_connection;
 pub mod signature;
 pub mod time;
 pub mod validate;
+pub mod version;
 pub mod vote;
 
 pub use self::{
@@ -24,5 +26,6 @@ pub use self::{
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::ConsensusMessage,
+    version::ConsensusVersion,
     vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
 };
