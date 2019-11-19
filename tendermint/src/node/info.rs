@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
 /// Node information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct Info {
     /// Protocol version information
     pub protocol_version: ProtocolVersionInfo,
@@ -85,7 +85,7 @@ impl Display for ListenAddress {
 }
 
 /// Other information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct OtherInfo {
     /// TX index status
     pub tx_index: TxIndexStatus,

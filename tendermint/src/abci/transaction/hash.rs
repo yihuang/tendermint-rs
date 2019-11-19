@@ -2,6 +2,7 @@
 
 use crate::error::{Error, ErrorKind};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use sha2::{Digest, Sha256};
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -25,6 +26,15 @@ impl Hash {
     /// Borrow the transaction hash as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
+    }
+}
+
+impl Default for Hash {
+    fn default() -> Hash {
+        // hash of empty data
+        let mut bytes = [0u8; LENGTH];
+        bytes.copy_from_slice(&Sha256::digest(&[])[..LENGTH]);
+        Hash::new(bytes)
     }
 }
 

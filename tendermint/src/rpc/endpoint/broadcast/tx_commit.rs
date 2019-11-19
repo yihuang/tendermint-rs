@@ -34,7 +34,7 @@ impl rpc::Request for Request {
 }
 
 /// Response from `/broadcast_tx_commit`.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Response {
     /// `CheckTx` result
     pub check_tx: TxResult,
