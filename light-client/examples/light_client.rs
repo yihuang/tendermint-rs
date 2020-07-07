@@ -164,16 +164,21 @@ fn sync_cmd(opts: SyncOpts) {
 
     std::thread::spawn(|| supervisor.run());
 
-    loop {
-        match handle.verify_to_highest() {
-            Ok(light_block) => {
-                println!("[info] synced to block {}", light_block.height());
+    {
+        let handle1 = handle.clone();
+        std::thread::spawn(move || loop {
+            match handle1.verify_to_highest() {
+                Ok(light_block) => {
+                    println!("[info] synced to block {}", light_block.height());
+                }
+                Err(err) => {
+                    println!("[error] sync failed: {}", err);
+                }
             }
-            Err(err) => {
-                println!("[error] sync failed: {}", err);
-            }
-        }
 
-        std::thread::sleep(Duration::from_millis(800));
+            std::thread::sleep(Duration::from_millis(800));
+        })
+        .join()
+        .unwrap();
     }
 }
